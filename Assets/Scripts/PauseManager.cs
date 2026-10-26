@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PauseManager : MonoBehaviour
 {
@@ -10,18 +11,28 @@ public class PauseManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
             SetPaused(!IsPaused);
+
+        // Restart only while paused (ESC → R). Free safety net for noclip / soft-locks.
+        if (IsPaused && Input.GetKeyDown(KeyCode.R))
+            RestartScene();
     }
 
     void SetPaused(bool paused)
     {
         IsPaused = paused;
-        Time.timeScale = paused ? 0f : 1f;   // freezes physics and anything time-based
-        AudioListener.pause = paused;        // freezes sound too
+        Time.timeScale = paused ? 0f : 1f;
+        AudioListener.pause = paused;
+    }
+
+    void RestartScene()
+    {
+        // Unpause BEFORE loading, or the new scene starts frozen
+        SetPaused(false);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     void OnDisable()
     {
-        // Safety: never leave the game frozen if this object is destroyed or the scene changes
         if (IsPaused) SetPaused(false);
     }
 
@@ -34,6 +45,7 @@ public class PauseManager : MonoBehaviour
             fontSize = 48,
             alignment = TextAnchor.MiddleCenter
         };
-        GUI.Label(new Rect(0, 0, Screen.width, Screen.height), "PAUSED. Press ESC again to unpause.", style);
+        GUI.Label(new Rect(0, 0, Screen.width, Screen.height),
+            "PAUSED\nPress ESC to unpause\nPress R to restart", style);
     }
 }

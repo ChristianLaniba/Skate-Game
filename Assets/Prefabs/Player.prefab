@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 613702737427790059}
   - component: {fileID: 8766892901715962201}
   - component: {fileID: 898966998350443260}
+  - component: {fileID: -1223765310051939447}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -114,6 +115,26 @@ MonoBehaviour:
   spinCooldown: 0.3
   trickSpinSpeed: 720
   trickCooldown: 0.2
+--- !u!114 &-1223765310051939447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5828824143476858221}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b327d228575c28143be65e295d04183d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KnockbackOnHit
+  knockbackForce: 12
+  knockbackUpForce: 4
+  knockbackDuration: 0.35
+  playerHitCooldown: 0.5
+  hazardTag: Hazard
+  maxHealth: 4
+  damagePerHit: 1
+  restartSceneIndex: -1
 --- !u!1 &6184230483755343183
 GameObject:
   m_ObjectHideFlags: 0
