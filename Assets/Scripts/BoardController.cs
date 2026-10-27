@@ -7,12 +7,12 @@ public class BoardController : MonoBehaviour
     public float walkMaxSpeed = 6f;
     public float coastDeceleration = 8f;
     public float turnSpeed = 125f;
-    public float carveStrength = 1f;
+    public float carveStrength = 8f;   // now interpreted as a rate (per second)
 
     [Header("Kick (Shift)")]
-    public float boostMaxSpeed = 25f;         // speed the board is instantly set to
-    public float boostCooldown = 1f;          // seconds before you can kick again
-    public float overspeedDeceleration = 15f; // how fast the kick fades back down
+    public float boostMaxSpeed = 25f;
+    public float boostCooldown = 1f;
+    public float overspeedDeceleration = 15f;
 
     [Header("Jumping")]
     public float jumpForce = 175f;
@@ -53,7 +53,6 @@ public class BoardController : MonoBehaviour
 
     void Update()
     {
-        // Ignore input while paused
         if (Time.timeScale == 0f) return;
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -70,20 +69,18 @@ public class BoardController : MonoBehaviour
     {
         float dt = Time.fixedDeltaTime;
 
-        // --- Ground check ---
         isGrounded = Physics.Raycast(transform.position, Vector3.down, groundRayDistance);
 
         float turnInput = Input.GetAxis("Horizontal");
         float moveInput = Input.GetAxis("Vertical");
 
-        // --- Kick (instant speed) ---
+        // --- Kick ---
         if (kickCooldownTimer > 0f) kickCooldownTimer -= dt;
 
         if (kickQueued)
         {
             if (kickCooldownTimer <= 0f && isGrounded)
             {
-                // Kick backward only if S is held, otherwise forward
                 float dir = moveInput < -0.01f ? -1f : 1f;
                 Vector3 kickVel = transform.forward * (dir * boostMaxSpeed);
                 rb.linearVelocity = new Vector3(kickVel.x, rb.linearVelocity.y, kickVel.z);
@@ -92,7 +89,7 @@ public class BoardController : MonoBehaviour
             kickQueued = false;
         }
 
-        // --- Trick start (E) ---
+        // --- Trick start ---
         if (trickQueued)
         {
             if (!IsDoingTrick && Time.time - lastTrickTime > trickCooldown)
@@ -104,7 +101,7 @@ public class BoardController : MonoBehaviour
             trickQueued = false;
         }
 
-        // --- Trick rotation (360 yaw) ---
+        // --- Trick rotation ---
         if (IsDoingTrick)
         {
             float step = Mathf.Min(trickSpinSpeed * dt, trickRemaining);
@@ -112,13 +109,13 @@ public class BoardController : MonoBehaviour
             trickRemaining -= step;
         }
 
-        // --- Turning (ground only, paused during trick) ---
+        // --- Turning (ground only) ---
         if (isGrounded && !IsDoingTrick)
         {
             transform.Rotate(0f, turnInput * turnSpeed * dt, 0f);
         }
 
-        // --- Carve (paused during trick) ---
+        // --- Carve: NOW frame-rate independent ---
         if (isGrounded && !IsDoingTrick && Mathf.Abs(turnInput) > 0.01f)
         {
             Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
@@ -128,12 +125,15 @@ public class BoardController : MonoBehaviour
                 float forwardDot = Vector3.Dot(flatVel.normalized, transform.forward);
                 Vector3 travelDir = forwardDot >= 0f ? transform.forward : -transform.forward;
                 Vector3 redirected = travelDir * flatVel.magnitude;
-                Vector3 newFlatVel = Vector3.Lerp(flatVel, redirected, carveStrength);
+
+                // Exponential smoothing — identical feel at any FPS
+                float t = 1f - Mathf.Exp(-carveStrength * dt);
+                Vector3 newFlatVel = Vector3.Lerp(flatVel, redirected, t);
                 rb.linearVelocity = new Vector3(newFlatVel.x, rb.linearVelocity.y, newFlatVel.z);
             }
         }
 
-        // --- Ground movement: slow WASD, kick fades back down ---
+        // --- Ground movement ---
         if (isGrounded)
         {
             bool hasMoveInput = Mathf.Abs(moveInput) > 0.01f;
@@ -145,7 +145,7 @@ public class BoardController : MonoBehaviour
 
             float rate = hasMoveInput ? moveAcceleration : coastDeceleration;
             if (Mathf.Abs(fwdSpeed) > walkMaxSpeed)
-                rate = overspeedDeceleration;   // fading out of a kick
+                rate = overspeedDeceleration;
 
             fwdSpeed = Mathf.MoveTowards(fwdSpeed, targetSpeed, rate * dt);
 
@@ -153,7 +153,7 @@ public class BoardController : MonoBehaviour
             rb.linearVelocity = new Vector3(newFlat.x, rb.linearVelocity.y, newFlat.z);
         }
 
-        // --- Flick spin (mouse, airborne) ---
+        // --- Flick spin ---
         if (!isGrounded && Input.GetMouseButton(0) && Time.time - lastSpinTime > spinCooldown)
         {
             float mouseX = Input.GetAxis("Mouse X");
@@ -165,7 +165,7 @@ public class BoardController : MonoBehaviour
             }
         }
 
-        // --- Jump (buffered) ---
+        // --- Jump ---
         if (jumpBufferTimer > 0f)
         {
             if (isGrounded)
@@ -179,7 +179,7 @@ public class BoardController : MonoBehaviour
             }
         }
 
-        // --- Auto-level (only when not spinning or doing a trick) ---
+        // --- Auto-level ---
         if (rb.angularVelocity.magnitude < 1f && !IsDoingTrick)
         {
             float levelStrength = isGrounded ? airLevelSpeed * 0.2f : airLevelSpeed;
@@ -189,7 +189,9 @@ public class BoardController : MonoBehaviour
                 Vector3.up
             );
 
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation, levelStrength * dt));
+            // Also switch to exponential smoothing for consistency
+            float t = 1f - Mathf.Exp(-levelStrength * dt);
+            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation, t));
         }
     }
 }

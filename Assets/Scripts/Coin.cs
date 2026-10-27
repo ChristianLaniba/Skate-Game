@@ -7,6 +7,8 @@ public class Coin : MonoBehaviour
 
     public static int TotalCoins { get; private set; }
 
+    public static void ResetTotal() => TotalCoins = 0;
+
     private bool collected;
 
     void Update()
@@ -25,6 +27,10 @@ public class Coin : MonoBehaviour
 
         TotalCoins += value;
         Debug.Log($"Coins: {TotalCoins}");
+
+        // Broadcast the new total — GameManager decides if we've won
+        GameEvents.CoinCollected(TotalCoins);
+
         Destroy(gameObject);
     }
 }

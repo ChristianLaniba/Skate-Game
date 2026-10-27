@@ -10,7 +10,18 @@ public static class GameEvents
         OnObstacleHit?.Invoke(damage);
     }
 
-    // Optional: useful for UI / restart flow
+    // Coin -> whoever cares (GameManager + HUD listen). Passes the new running total.
+    public static event Action<int> OnCoinCollected;
+
+    public static void CoinCollected(int totalCoins)
+    {
+        OnCoinCollected?.Invoke(totalCoins);
+    }
+
+    // Game flow
     public static event Action OnGameOver;
     public static void TriggerGameOver() => OnGameOver?.Invoke();
+
+    public static event Action OnGameWon;
+    public static void TriggerGameWon() => OnGameWon?.Invoke();
 }

@@ -15,7 +15,7 @@ public class HealthBarUI : MonoBehaviour
     {
         if (healthData == null) return;
         healthData.OnHealthChanged += HandleHealthChanged;
-        currentHealth = healthData.CurrentHealth;
+        currentHealth = healthData.Health;
         maxHealth = healthData.MaxHealth;
     }
 
@@ -41,7 +41,6 @@ public class HealthBarUI : MonoBehaviour
             Rect seg = new Rect(barPosition.x + i * segmentWidth, barPosition.y, segmentWidth - 2f, barSize.y);
             bool filled = i < currentHealth;
 
-            // Background
             var old = GUI.color;
             GUI.color = filled ? fullColor : emptyColor;
             GUI.DrawTexture(seg, Texture2D.whiteTexture);

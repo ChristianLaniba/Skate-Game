@@ -5,12 +5,34 @@ public class PlayerHealthData : ScriptableObject
 {
     [Header("Configuration")]
     public int maxHealth = 4;
-    public int damagePerHit = 1;   // 1 of 4 quarters
+    public int damagePerHit = 1;
 
-    [Header("Runtime (read-only in inspector)")]
-    [SerializeField] private int currentHealth;
+    [SerializeField, Tooltip("Inspector-only display. Edit through TakeDamage/Heal.")]
+    private int _health;   // private backing field
 
-    public int CurrentHealth => currentHealth;
+    /// <summary>
+    /// Current health. The setter clamps between 0 and MaxHealth,
+    /// fires OnHealthChanged when the value changes, and fires
+    /// OnPlayerDied automatically when it reaches 0.
+    /// </summary>
+    public int Health
+    {
+        get => _health;
+        private set
+        {
+            int clamped = Mathf.Clamp(value, 0, maxHealth);
+
+            // No-op if nothing changed — avoids event spam and false deaths
+            if (clamped == _health) return;
+
+            _health = clamped;
+            OnHealthChanged?.Invoke(_health, maxHealth);
+
+            if (_health == 0)
+                OnPlayerDied?.Invoke();
+        }
+    }
+
     public int MaxHealth => maxHealth;
 
     // Events — subscribers listen to these
@@ -22,29 +44,14 @@ public class PlayerHealthData : ScriptableObject
 
     void OnEnable()
     {
-        // Reset on play (and also acts as a safe default)
-        currentHealth = maxHealth;
+        // Reset on play / fresh scene
+        _health = maxHealth;
+        OnHealthChanged?.Invoke(_health, maxHealth);
     }
 
-    public void Initialize()
-    {
-        currentHealth = maxHealth;
-        OnHealthChanged?.Invoke(currentHealth, maxHealth);
-    }
+    public void Initialize() => Health = maxHealth;
 
-    public void TakeDamage(int amount)
-    {
-        if (currentHealth <= 0) return;
-        currentHealth = Mathf.Max(0, currentHealth - amount);
-        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    public void TakeDamage(int amount) => Health -= amount;   // clamped by setter
 
-        if (currentHealth == 0)
-            OnPlayerDied?.Invoke();
-    }
-
-    public void Heal(int amount)
-    {
-        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
-        OnHealthChanged?.Invoke(currentHealth, maxHealth);
-    }
+    public void Heal(int amount) => Health += amount;         // clamped by setter
 }
