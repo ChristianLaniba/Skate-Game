@@ -4,7 +4,7 @@ public class CameraFollow : MonoBehaviour
 {
     public Transform target;   // optional: leave empty to auto-detect
     public Vector3 offset = new Vector3(0f, 8f, -20f);
-    public float rotationFollowSpeed = 8f;   // rate per second (frame-rate independent)
+    public float rotationFollowSpeed = 3f;
 
     private float currentYaw = 0f;
     private BoardController board;

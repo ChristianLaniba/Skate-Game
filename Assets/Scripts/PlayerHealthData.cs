@@ -10,11 +10,6 @@ public class PlayerHealthData : ScriptableObject
     [SerializeField, Tooltip("Inspector-only display. Edit through TakeDamage/Heal.")]
     private int _health;   // private backing field
 
-    /// <summary>
-    /// Current health. The setter clamps between 0 and MaxHealth,
-    /// fires OnHealthChanged when the value changes, and fires
-    /// OnPlayerDied automatically when it reaches 0.
-    /// </summary>
     public int Health
     {
         get => _health;
